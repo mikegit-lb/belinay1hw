@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Drag-and-Drop Vocabulary Match</title>
+  <style>
+    :root {
+      --bg: #07111f;
+      --card: #10223a;
+      --soft: #183350;
+      --accent: #4da3ff;
+      --gold: #c7a86d;
+      --text: #ffffff;
+      --muted: #c8d4e3;
+      --green: #2ecc71;
+      --red: #ff6b6b;
+      --yellow: #ffd166;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: radial-gradient(circle at top left, #132d4d, var(--bg) 45%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 32px 20px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      color: var(--gold);
+      font-size: clamp(28px, 5vw, 48px);
+    }
+
+    .subtitle {
+      margin: 0 auto;
+      max-width: 800px;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 17px;
+    }
+
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      padding: 14px;
+      background: rgba(7, 17, 31, 0.92);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    button {
+      border: none;
+      padding: 11px 18px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-weight: 700;
+      color: var(--bg);
+      background: var(--gold);
+      transition: transform 0.15s, opacity 0.15s;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      opacity: 0.92;
+    }
+
+    .score-box {
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: var(--soft);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    main {
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 1fr 1.6fr;
+      gap: 24px;
+    }
+
+    .panel {
+      background: rgba(16, 34, 58, 0.82);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 24px;
+      padding: 20px;
+      box-shadow: 0 15px 45px rgba(0,0,0,0.22);
+    }
+
+    .panel h2 {
+      margin-top: 0;
+      color: var(--accent);
+    }
+
+    .word-bank {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      min-height: 180px;
+    }
+
+    .word-card {
+      background: linear-gradient(135deg, #ffffff, #dcecff);
+      color: #07111f;
+      padding: 10px 14px;
+      border-radius: 14px;
+      font-weight: 700;
+      cursor: grab;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.22);
+      user-select: none;
+    }
+
+    .word-card:active {
+      cursor: grabbing;
+    }
+
+    .word-card.used {
+      opacity: 0.35;
+      pointer-events: none;
+    }
+
+    .targets {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(220px, 1fr));
+      gap: 14px;
+    }
+
+    .target {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 18px;
+      padding: 14px;
+      min-height: 112px;
+    }
+
+    .tr-word {
+      color: var(--yellow);
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+
+    .drop-zone {
+      min-height: 44px;
+      border: 2px dashed rgba(255,255,255,0.32);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      color: var(--muted);
+      background: rgba(0,0,0,0.16);
+      text-align: center;
+    }
+
+    .drop-zone.hover {
+      border-color: var(--accent);
+      background: rgba(77, 163, 255, 0.18);
+    }
+
+    .target.correct {
+      border-color: var(--green);
+      background: rgba(46, 204, 113, 0.14);
+    }
+
+    .target.wrong {
+      border-color: var(--red);
+      background: rgba(255, 107, 107, 0.14);
+    }
+
+    .feedback {
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 16px;
+      background: rgba(0,0,0,0.22);
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .teacher-notes {
+      max-width: 1300px;
+      margin: 0 auto 40px;
+      padding: 0 24px;
+    }
+
+    .notes-card {
+      background: rgba(199,168,109,0.12);
+      border: 1px solid rgba(199,168,109,0.35);
+      border-radius: 22px;
+      padding: 20px;
+      line-height: 1.7;
+    }
+
+    @media (max-width: 900px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+
+      .targets {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media print {
+      body {
+        background: white;
+        color: black;
+      }
+
+      .toolbar, button {
+        display: none;
+      }
+
+      .panel, .notes-card {
+        box-shadow: none;
+        border: 1px solid #999;
+        background: white;
+        color: black;
+      }
+
+      .word-card {
+        border: 1px solid #333;
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Vocabulary Treasure Hunt</h1>
+    <p class="subtitle">
+      Drag the English word cards onto the correct Turkish meanings. Click “Check Answers” to see your score.
+      Perfect for mystery, adventure, detective, and storytelling lessons.
+    </p>
+  </header>
+
+  <div class="toolbar">
+    <button onclick="checkAnswers()">Check Answers</button>
+    <button onclick="showAnswers()">Show Answers</button>
+    <button onclick="resetGame()">Reset</button>
+    <button onclick="shuffleCards()">Shuffle Words</button>
+    <div class="score-box" id="scoreBox">Score: 0 / 34</div>
+  </div>
+
+  <main>
+    <section class="panel">
+      <h2>English Word Bank</h2>
+      <div class="word-bank" id="wordBank">
+        <div class="word-card" draggable="true" data-word="treasure">treasure</div>
+<div class="word-card" draggable="true" data-word="shadow">shadow</div>
+<div class="word-card" draggable="true" data-word="impossible">impossible</div>
+<div class="word-card" draggable="true" data-word="steal">steal</div>
+<div class="word-card" draggable="true" data-word="on duty">on duty</div>
+<div class="word-card" draggable="true" data-word="witness">witness</div>
+<div class="word-card" draggable="true" data-word="explorer">explorer</div>
+<div class="word-card" draggable="true" data-word="inventor">inventor</div>
+<div class="word-card" draggable="true" data-word="discovery">discovery</div>
+<div class="word-card" draggable="true" data-word="challenge">challenge</div>
+<div class="word-card" draggable="true" data-word="journey">journey</div>
+<div class="word-card" draggable="true" data-word="secret">secret</div>
+<div class="word-card" draggable="true" data-word="clue">clue</div>
+<div class="word-card" draggable="true" data-word="notice">notice</div>
+<div class="word-card" draggable="true" data-word="discover">discover</div>
+<div class="word-card" draggable="true" data-word="escape">escape</div>
+<div class="word-card" draggable="true" data-word="investigate">investigate</div>
+<div class="word-card" draggable="true" data-word="whisper">whisper</div>
+<div class="word-card" draggable="true" data-word="scream">scream</div>
+<div class="word-card" draggable="true" data-word="rescue">rescue</div>
+<div class="word-card" draggable="true" data-word="disappear">disappear</div>
+<div class="word-card" draggable="true" data-word="chase">chase</div>
+<div class="word-card" draggable="true" data-word="unlock">unlock</div>
+<div class="word-card" draggable="true" data-word="terrified">terrified</div>
+<div class="word-card" draggable="true" data-word="proud">proud</div>
+<div class="word-card" draggable="true" data-word="courage">courage</div>
+<div class="word-card" draggable="true" data-word="displeasure">displeasure</div>
+<div class="word-card" draggable="true" data-word="relieved">relieved</div>
+<div class="word-card" draggable="true" data-word="confused">confused</div>
+<div class="word-card" draggable="true" data-word="curious">curious</div>
+<div class="word-card" draggable="true" data-word="fear">fear</div>
+<div class="word-card" draggable="true" data-word="hope">hope</div>
+<div class="word-card" draggable="true" data-word="disappointed">disappointed</div>
+<div class="word-card" draggable="true" data-word="grateful">grateful</div>
+      </div>
+      <div class="feedback" id="feedback">
+        Teacher tip: Ask students to say one sentence with each word after matching it.
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Turkish Meanings</h2>
+      <div class="targets" id="targets">
+        
+    <div class="target" data-answer="treasure">
+      <div class="tr-word">hazine</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+
+    <div class="target" data-answer="shadow">
+      <div class="tr-word">gölge</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+
+    <div class="target" data-answer="impossible">
+      <div class="tr-word">imkansız</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+
+    <div class="target" data-answer="steal">
+      <div class="tr-word">çalmak</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+
+    <div class="target" data-answer="on duty">
+      <div class="tr-word">görevde</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+
+    <div class="target" data-answer="witness">
+      <div class="tr-word">tanık olmak</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+
+    <div class="target" data-answer="explorer">
+      <div class="tr-word">kaşif / gezgin</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+
+    <div class="target" data-answer="inventor">
+      <div class="tr-word">mucit</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+
+    <div class="target" data-answer="discovery">
+      <div class="tr-word">keşif</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+
+    <div class="target" data-answer="challenge">
+      <div class="tr-word">zorluk</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+
+    <div class="target" data-answer="journey">
+      <div class="tr-word">yolculuk</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+
+    <div class="target" data-answer="secret">
+      <div class="tr-word">sır / gizli</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+
+    <div class="target" data-answer="clue">
+      <div class="tr-word">ipucu</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+
+    <div class="target" data-answer="notice">
+      <div class="tr-word">farketmek</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+
+    <div class="target" data-answer="discover">
+      <div class="tr-word">keşfetmek</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+
+    <div class="target" data-answer="escape">
+      <div class="tr-word">kaçmak</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+
+    <div class="target" data-answer="investigate">
+      <div class="tr-word">araştırmak / soruşturmak</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+
+    <div class="target" data-answer="whisper">
+      <div class="tr-word">fısıldamak</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+
+    <div class="target" data-answer="scream">
+      <div class="tr-word">çığlık atmak</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+
+    <div class="target" data-answer="rescue">
+      <div class="tr-word">kurtarmak</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+
+    <div class="target" data-answer="disappear">
+      <div class="tr-word">ortadan kaybolmak</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+
+    <div class="target" data-answer="chase">
+      <div class="tr-word">kovalamak</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+
+    <div class="target" data-answer="unlock">
+      <div class="tr-word">kilidini açmak</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+
+    <div class="target" data-answer="terrified">
+      <div class="tr-word">korkmuş / dehşete kapılmış</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+
+    <div class="target" data-answer="proud">
+      <div class="tr-word">gururlu</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+
+    <div class="target" data-answer="courage">
+      <div class="tr-word">cesaret</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+
+    <div class="target" data-answer="displeasure">
+      <div class="tr-word">memnuniyetsizlik</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+
+    <div class="target" data-answer="relieved">
+      <div class="tr-word">rahatlamış</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+
+    <div class="target" data-answer="confused">
+      <div class="tr-word">kafası karışmış</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+
+    <div class="target" data-answer="curious">
+      <div class="tr-word">meraklı</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+
+    <div class="target" data-answer="fear">
+      <div class="tr-word">korku</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+
+    <div class="target" data-answer="hope">
+      <div class="tr-word">umut</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+
+    <div class="target" data-answer="disappointed">
+      <div class="tr-word">hayal kırıklığına uğramış</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+
+    <div class="target" data-answer="grateful">
+      <div class="tr-word">minnettar / memnun</div>
+      <div class="drop-zone">Drop English word here</div>
+    </div>
+    
+      </div>
+    </section>
+  </main>
+
+  <section class="teacher-notes">
+    <div class="notes-card">
+      <strong>Speaking Extension:</strong> After students finish, choose 8 words and create a mini mystery story.
+      Example: “An explorer found a clue in the shadow, but the treasure disappeared.”
+      <br><br>
+      <strong>Challenge Mode:</strong> Students must use at least 5 emotion words: terrified, proud, relieved, confused, curious, disappointed, grateful.
+    </div>
+  </section>
+
+  <script>
+    let draggedCard = null;
+
+    function initializeDragAndDrop() {
+      document.querySelectorAll('.word-card').forEach(card => {
+        card.addEventListener('dragstart', e => {
+          draggedCard = card;
+          e.dataTransfer.setData('text/plain', card.dataset.word);
+        });
+      });
+
+      document.querySelectorAll('.drop-zone').forEach(zone => {
+        zone.addEventListener('dragover', e => {
+          e.preventDefault();
+          zone.classList.add('hover');
+        });
+
+        zone.addEventListener('dragleave', () => {
+          zone.classList.remove('hover');
+        });
+
+        zone.addEventListener('drop', e => {
+          e.preventDefault();
+          zone.classList.remove('hover');
+
+          if (!draggedCard) return;
+
+          const existingWord = zone.dataset.word;
+          if (existingWord) {
+            const oldCard = document.querySelector(`.word-card[data-word="${CSS.escape(existingWord)}"]`);
+            if (oldCard) oldCard.classList.remove('used');
+          }
+
+          zone.textContent = draggedCard.textContent;
+          zone.dataset.word = draggedCard.dataset.word;
+          draggedCard.classList.add('used');
+
+          zone.closest('.target').classList.remove('correct', 'wrong');
+          updateLiveScore();
+        });
+      });
+    }
+
+    function updateLiveScore() {
+      let filled = 0;
+      document.querySelectorAll('.drop-zone').forEach(zone => {
+        if (zone.dataset.word) filled++;
+      });
+      document.getElementById('scoreBox').textContent = `Completed: ${filled} / 34`;
+    }
+
+    function checkAnswers() {
+      let score = 0;
+      let empty = 0;
+
+      document.querySelectorAll('.target').forEach(target => {
+        const answer = target.dataset.answer;
+        const zone = target.querySelector('.drop-zone');
+        const chosen = zone.dataset.word;
+
+        target.classList.remove('correct', 'wrong');
+
+        if (!chosen) {
+          empty++;
+          return;
+        }
+
+        if (chosen === answer) {
+          score++;
+          target.classList.add('correct');
+        } else {
+          target.classList.add('wrong');
+        }
+      });
+
+      document.getElementById('scoreBox').textContent = `Score: ${score} / 34`;
+
+      let message = "";
+      if (score === 34) {
+        message = "Excellent! You matched every word correctly. 🏆";
+      } else if (score >= 25) {
+        message = "Strong work. Check the red boxes and try again. 🔍";
+      } else if (score >= 15) {
+        message = "Good start. Review the meanings and correct the red boxes. 💪";
+      } else {
+        message = "Keep practicing. Try matching the easier words first. 🌱";
+      }
+
+      if (empty > 0) {
+        message += ` You still have ${empty} empty spaces.`;
+      }
+
+      document.getElementById('feedback').textContent = message;
+    }
+
+    function showAnswers() {
+      document.querySelectorAll('.target').forEach(target => {
+        const answer = target.dataset.answer;
+        const zone = target.querySelector('.drop-zone');
+        zone.textContent = answer;
+        zone.dataset.word = answer;
+        target.classList.remove('wrong');
+        target.classList.add('correct');
+      });
+
+      document.querySelectorAll('.word-card').forEach(card => card.classList.add('used'));
+      document.getElementById('scoreBox').textContent = `Score: 34 / 34`;
+      document.getElementById('feedback').textContent = "Answers are now visible. Use this as review mode.";
+    }
+
+    function resetGame() {
+      document.querySelectorAll('.drop-zone').forEach(zone => {
+        zone.textContent = "Drop English word here";
+        delete zone.dataset.word;
+      });
+
+      document.querySelectorAll('.target').forEach(target => {
+        target.classList.remove('correct', 'wrong');
+      });
+
+      document.querySelectorAll('.word-card').forEach(card => {
+        card.classList.remove('used');
+      });
+
+      document.getElementById('scoreBox').textContent = `Score: 0 / 34`;
+      document.getElementById('feedback').textContent = "Game reset. Try again!";
+      shuffleCards();
+    }
+
+    function shuffleCards() {
+      const bank = document.getElementById('wordBank');
+      const cards = Array.from(bank.children);
+      for (let i = cards.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [cards[i], cards[j]] = [cards[j], cards[i]];
+      }
+      cards.forEach(card => bank.appendChild(card));
+    }
+
+    initializeDragAndDrop();
+    shuffleCards();
+  </script>
+</body>
+</html>
